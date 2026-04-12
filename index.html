@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lucky 777 - Mobile Edition</title>
+    <script src="https://socket.io"></script>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; align-items: center; justify-content: center; }
+        .balance { background: #27ae60; padding: 10px 20px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; }
+        .slot-container { display: flex; gap: 10px; background: #fff; padding: 15px; border: 5px solid #f1c40f; border-radius: 15px; }
+        .reel { width: 80px; height: 80px; background: #eee; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 10px; }
+        .reel img { width: 70%; height: 70%; object-fit: contain; }
+        .play-btn { margin-top: 30px; width: 100px; height: 100px; border-radius: 50%; border: none; background: radial-gradient(#ff4d4d, #b30000); color: white; font-weight: bold; cursor: pointer; font-size: 20px; box-shadow: 0 5px #660000; }
+        .play-btn:active { transform: translateY(3px); box-shadow: 0 2px #660000; }
+        .rolling { animation: spin 0.1s infinite linear; }
+        @keyframes spin { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="balance">৳ <span id="balance">10000</span></div>
+
+    <div class="slot-container">
+        <div id="r1" class="reel"></div>
+        <div id="r2" class="reel"></div>
+        <div id="r3" class="reel"></div>
+    </div>
+
+    <button class="play-btn" id="btn" onclick="spin()">PLAY</button>
+
+    <script>
+        const socket = io();
+        let balance = 10000;
+        const reels = [document.getElementById('r1'), document.getElementById('r2'), document.getElementById('r3')];
+
+        function spin() {
+            if (balance < 10) return alert("Low Balance!");
+            balance -= 10;
+            updateUI();
+            reels.forEach(r => r.classList.add('rolling'));
+            document.getElementById('btn').disabled = true;
+            socket.emit('request-spin', { bet: 10 });
+        }
+
+        socket.on('receive-spin', (data) => {
+            setTimeout(() => {
+                reels.forEach((r, i) => {
+                    r.classList.remove('rolling');
+                    r.innerHTML = `<img src="${data.grid[i]}">`;
+                });
+                if (data.win) {
+                    balance += data.prize;
+                    alert("You Win ৳" + data.prize);
+                }
+                document.getElementById('btn').disabled = false;
+                updateUI();
+            }, 1000);
+        });
+
+        function updateUI() {
+            document.getElementById('balance').innerText = balance;
+        }
+    </script>
+</body>
+</html>
