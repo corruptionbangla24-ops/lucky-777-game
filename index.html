@@ -3,64 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lucky 777 - Mobile Edition</title>
-    <script src="https://socket.io"></script>
+    <title>BETLOVER24 - PRO SLOT</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; align-items: center; justify-content: center; }
-        .balance { background: #27ae60; padding: 10px 20px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; }
-        .slot-container { display: flex; gap: 10px; background: #fff; padding: 15px; border: 5px solid #f1c40f; border-radius: 15px; }
-        .reel { width: 80px; height: 80px; background: #eee; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 10px; }
-        .reel img { width: 70%; height: 70%; object-fit: contain; }
-        .play-btn { margin-top: 30px; width: 100px; height: 100px; border-radius: 50%; border: none; background: radial-gradient(#ff4d4d, #b30000); color: white; font-weight: bold; cursor: pointer; font-size: 20px; box-shadow: 0 5px #660000; }
-        .play-btn:active { transform: translateY(3px); box-shadow: 0 2px #660000; }
-        .rolling { animation: spin 0.1s infinite linear; }
-        @keyframes spin { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.1); opacity: 1; } }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f0f0f; color: white; margin: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; height: 100vh; }
+        .header { width: 100%; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; border-bottom: 2px solid #f1c40f; box-sizing: border-box; }
+        .brand .name { color: #00e6ff; font-weight: 900; font-size: 20px; }
+        .brand .game { color: #ff4d4d; font-weight: bold; font-size: 13px; }
+        .balance-box { background: linear-gradient(145deg, #27ae60, #2ecc71); padding: 6px 18px; border-radius: 30px; font-weight: bold; font-size: 18px; }
+        .slot-machine { margin-top: 15px; display: grid; grid-template-columns: repeat(3, 85px); grid-template-rows: repeat(4, 85px); gap: 10px; background: #222; padding: 12px; border: 4px solid #f1c40f; border-radius: 18px; }
+        .reel { width: 85px; height: 85px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 10px; position: relative; }
+        .reel img { width: 80%; height: 80%; object-fit: contain; position: absolute; }
+        .scrolling img { animation: scrollDown 0.12s infinite linear; }
+        @keyframes scrollDown { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+        .footer-controls { position: fixed; bottom: 20px; width: 92%; display: flex; justify-content: space-between; align-items: center; background: rgba(20,20,20,0.95); padding: 12px 15px; border-radius: 60px; border: 1px solid #333; }
+        .bet-group { display: flex; align-items: center; background: #333; padding: 6px 16px; border-radius: 30px; gap: 15px; }
+        .play-btn { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(#ff4d4d, #b30000); border: 4px solid #fff; color: white; font-weight: 900; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px #000; }
+        .play-btn:active { transform: translateY(3px); box-shadow: 0 2px #000; }
+        .play-btn:disabled { opacity: 0.5; filter: grayscale(1); }
+        .btn-icon { background: #444; border: none; color: white; width: 42px; height: 42px; border-radius: 50%; font-size: 18px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
-    <div class="balance">৳ <span id="balance">10000</span></div>
-
-    <div class="slot-container">
-        <div id="r1" class="reel"></div>
-        <div id="r2" class="reel"></div>
-        <div id="r3" class="reel"></div>
+    <div class="header">
+        <div class="brand">
+            <div class="name">BETLOVER24</div>
+            <div class="game">LUCKY 777</div>
+        </div>
+        <div class="balance-box">৳ <span id="balance">10000</span></div>
     </div>
 
-    <button class="play-btn" id="btn" onclick="spin()">PLAY</button>
+    <div class="slot-machine" id="machine"></div>
+
+    <div class="footer-controls">
+        <div class="bet-group">
+            <button onclick="changeBet(-5)" style="color:#fff; border:none; background:none; font-size:24px;">-</button>
+            <span id="current-bet" style="color:#f1c40f; font-weight:bold; font-size:20px;">15</span>
+            <button onclick="changeBet(5)" style="color:#fff; border:none; background:none; font-size:24px;">+</button>
+        </div>
+
+        <button class="play-btn" id="btn" onclick="spin()">SPIN</button>
+
+        <div style="display:flex; gap:10px;">
+            <button class="btn-icon" id="sound-btn" onclick="toggleSound()">🔊</button>
+            <button class="btn-icon" id="turbo-btn" onclick="toggleTurbo()" style="color:#f1c40f;">⚡</button>
+        </div>
+    </div>
 
     <script>
         const socket = io();
-        let balance = 10000;
-        const reels = [document.getElementById('r1'), document.getElementById('r2'), document.getElementById('r3')];
+        let balance = parseInt(localStorage.getItem('slot_balance')) || 10000;
+        let currentBet = 15;
+        let isTurbo = false;
+        let soundOn = true;
+        const machine = document.getElementById('machine');
+        
+        // ৪টি সাউন্ড ফাইল লোড করা
+        const sndClick = new Audio('click.mp3');
+        const sndSpin = new Audio('spin.mp3');
+        const sndWin = new Audio('win.mp3');
+        const sndBigWin = new Audio('bigwin.mp3');
+
+        for (let i = 0; i < 12; i++) { machine.innerHTML += `<div id="slot-${i}" class="reel"></div>`; }
+        const images = ['apple.png', 'banana.png', 'coin.png', 'dollar.png', 'seven.png', 'begun.png', 'jambura.png', 'rose.png', 'beer-bottle.png', 'water-bottle.png'];
+
+        window.onload = () => {
+            for (let i = 0; i < 12; i++) { document.getElementById(`slot-${i}`).innerHTML = `<img src="${images[Math.floor(Math.random()*images.length)]}">`; }
+            updateUI();
+        };
+
+        function changeBet(val) { if (currentBet + val >= 5) { currentBet += val; document.getElementById('current-bet').innerText = currentBet; } }
+        function toggleTurbo() { isTurbo = !isTurbo; document.getElementById('turbo-btn').style.background = isTurbo ? '#600' : '#444'; }
+        function toggleSound() { soundOn = !soundOn; document.getElementById('sound-btn').innerText = soundOn ? '🔊' : '🔇'; }
 
         function spin() {
-            if (balance < 10) return alert("Low Balance!");
-            balance -= 10;
-            updateUI();
-            reels.forEach(r => r.classList.add('rolling'));
+            if (balance < currentBet) return alert("ব্যালেন্স নেই!");
+            balance -= currentBet; updateUI();
+            
+            // ১. ক্লিক সাউন্ড
+            if(soundOn) sndClick.play().catch(()=>{});
+            // ২. স্পিন সাউন্ড (লুপ হবে যতক্ষণ রেজাল্ট না আসে)
+            if(soundOn) { sndSpin.loop = true; sndSpin.play().catch(()=>{}); }
+
+            for (let i = 0; i < 12; i++) { document.getElementById(`slot-${i}`).classList.add('scrolling'); }
             document.getElementById('btn').disabled = true;
-            socket.emit('request-spin', { bet: 10 });
+            socket.emit('request-spin', { bet: currentBet });
         }
 
         socket.on('receive-spin', (data) => {
+            const delay = isTurbo ? 600 : 1500;
             setTimeout(() => {
-                reels.forEach((r, i) => {
-                    r.classList.remove('rolling');
-                    r.innerHTML = `<img src="${data.grid[i]}">`;
+                sndSpin.pause(); sndSpin.currentTime = 0; // স্পিন সাউন্ড বন্ধ
+                let cellIndex = 0;
+                data.grid.forEach(row => {
+                    row.forEach(imgName => {
+                        const reel = document.getElementById(`slot-${cellIndex}`);
+                        reel.classList.remove('scrolling');
+                        reel.innerHTML = `<img src="${imgName}">`;
+                        cellIndex++;
+                    });
                 });
+                
                 if (data.win) {
                     balance += data.prize;
-                    alert("You Win ৳" + data.prize);
+                    // ৩ ও ৪. জিতলে উইন বা বিগ উইন সাউন্ড
+                    if(soundOn) {
+                        if(data.prize >= currentBet * 10) sndBigWin.play().catch(()=>{});
+                        else sndWin.play().catch(()=>{});
+                    }
+                    setTimeout(() => alert("WINNER! ৳" + data.prize), 200);
                 }
                 document.getElementById('btn').disabled = false;
                 updateUI();
-            }, 1000);
+            }, delay);
         });
 
         function updateUI() {
             document.getElementById('balance').innerText = balance;
+            localStorage.setItem('slot_balance', balance);
         }
     </script>
 </body>
 </html>
+
+
