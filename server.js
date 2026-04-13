@@ -9,18 +9,18 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// আপনার চিরকুটের সংশোধিত প্রাইজ তালিকা
+// প্রাইজ লিস্ট (আপনার চিরকুট ও ব্যবসায়িক লজিক অনুযায়ী)
 const multipliers = {
-    'seven.png': 100,        // ১০০ গুণ
-    'beer-bottle.png': 50,   // ৫০ গুণ
-    'coin.png': 10,          // ১০ গুণ
-    'dollar.png': 5,         // ৫ গুণ
-    'rose.png': 2,           // ২ গুণ
-    'apple.png': 1.5,        // ১.৫ গুণ
-    'jambura.png': 1.2,      // ১.২ গুণ
-    'banana.png': 0.8,       // ০.৮ গুণ
-    'begun.png': 0.5,        // ০.৫ গুণ
-    'water-bottle.png': 0    // ০ গুণ
+    'seven.png': 700,        // মেগা উইন ১
+    'beer-bottle.png': 500,  // মেগা উইন ২
+    'coin.png': 200,         // মেগা উইন ৩
+    'dollar.png': 50,        // বিগ উইন
+    'rose.png': 10,
+    'apple.png': 2,
+    'jambura.png': 1.5,
+    'banana.png': 1,
+    'begun.png': 0.5,
+    'water-bottle.png': 0.2
 };
 
 const images = Object.keys(multipliers);
@@ -28,6 +28,7 @@ const images = Object.keys(multipliers);
 io.on('connection', (socket) => {
     socket.on('request-spin', (data) => {
         let grid = [];
+        // ৩ কলাম x ৪ সারির গ্রিড তৈরি
         for (let i = 0; i < 4; i++) {
             grid.push([
                 images[Math.floor(Math.random() * images.length)],
@@ -36,41 +37,48 @@ io.on('connection', (socket) => {
             ]);
         }
 
-        let win = false;
         let totalPrize = 0;
+        let win = false;
+        let isMegaWin = false;
 
-        // ১. সারি চেক (Horizontal - ৪টি উপায়)
-        grid.forEach(row => {
-            if (row[0] === row[1] && row[1] === row[2]) {
-                win = true;
-                totalPrize += data.bet * multipliers[row[0]];
-            }
-        });
+        // --- মেগা উইন কন্ট্রোল (র্যান্ডমলি ভাগ্যক্রমে আসবে) ---
+        let luckFactor = Math.random() * 2000; // ২০০০ বারের মধ্যে ১ বার মেগা উইন
 
-        // ২. কলাম চেক (Vertical - ৩টি উপায়)
-        for (let col = 0; col < 3; col++) {
-            if (grid[0][col] === grid[1][col] && grid[1][col] === grid[2][col] && grid[2][col] === grid[3][col]) {
-                win = true;
-                // কলামে ৪টি মিললে বোনাস হিসেবে ২ গুণ বেশি প্রাইজ
-                totalPrize += data.bet * multipliers[grid[0][col]] * 2;
-            }
+        if (luckFactor < 1) { // ৭০০ গুণ
+            win = true; isMegaWin = true;
+            totalPrize = data.bet * 700;
+            grid = [['seven.png', 'seven.png', 'seven.png'], ['seven.png', 'seven.png', 'seven.png'], ['seven.png', 'seven.png', 'seven.png'], ['seven.png', 'seven.png', 'seven.png']];
+        } else if (luckFactor < 3) { // ৫০০ গুণ
+            win = true; isMegaWin = true;
+            totalPrize = data.bet * 500;
+            grid = [['beer-bottle.png', 'beer-bottle.png', 'beer-bottle.png'],['beer-bottle.png', 'beer-bottle.png', 'beer-bottle.png'],['beer-bottle.png', 'beer-bottle.png', 'beer-bottle.png'],['beer-bottle.png', 'beer-bottle.png', 'beer-bottle.png']];
+        } else if (luckFactor < 10) { // ২০০ গুণ
+            win = true; isMegaWin = true;
+            totalPrize = data.bet * 200;
+            grid = [['coin.png', 'coin.png', 'coin.png'],['coin.png', 'coin.png', 'coin.png'],['coin.png', 'coin.png', 'coin.png'],['coin.png', 'coin.png', 'coin.png']];
+        } else {
+            // --- সাধারণ ২৪৩ ওয়েজ উইনিং লজিক ---
+            images.forEach(img => {
+                let col1 = grid.filter(row => row[0] === img).length;
+                let col2 = grid.filter(row => row[1] === img).length;
+                let col3 = grid.filter(row => row[2] === img).length;
+
+                if (col1 > 0 && col2 > 0 && col3 > 0) {
+                    // শুধু ছোট প্রাইজগুলো ২৪৩ ওয়েজে বারবার মিলবে
+                    if (multipliers[img] < 100) {
+                        win = true;
+                        let ways = col1 * col2 * col3;
+                        totalPrize += (data.bet * multipliers[img] * ways) / 5;
+                    }
+                }
+            });
         }
 
-        // ৩. কোণাকুণি চেক (Diagonal - ৪টি প্রধান উপায়)
-        // উদাহরণ: উপরের বাম থেকে নিচের ডান
-        if (grid[0][0] === grid[1][1] && grid[1][1] === grid[2][2]) {
-            win = true;
-            totalPrize += data.bet * multipliers[grid[0][0]];
-        }
-        if (grid[1][0] === grid[2][1] && grid[2][1] === grid[3][2]) {
-            win = true;
-            totalPrize += data.bet * multipliers[grid[1][0]];
-        }
-
-        socket.emit('receive-spin', { grid, win, prize: Math.floor(totalPrize) });
+        // আউটপুট পাঠানো
+        socket.emit('receive-spin', { grid, win, prize: Math.floor(totalPrize), isMegaWin });
     });
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, '0.0.0.0', () => { console.log(`Server running on port ${PORT}`); });
+server.listen(PORT, '0.0.0.0', () => { console.log(`243 Ways & Mega Win Active`); });
 
