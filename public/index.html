@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lucky 777 - Final</title>
+    <script src="https://socket.io"></script>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; align-items: center; justify-content: center; }
+        .balance { background: #27ae60; padding: 10px 25px; border-radius: 30px; font-weight: bold; margin-bottom: 30px; font-size: 24px; }
+        .slot-container { display: flex; gap: 10px; background: #fff; padding: 15px; border: 5px solid #f1c40f; border-radius: 15px; }
+        .reel { width: 85px; height: 85px; background: #f9f9f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 10px; }
+        .reel img { width: 80%; height: 80%; object-fit: contain; }
+        .play-btn { margin-top: 30px; width: 110px; height: 110px; border-radius: 50%; border: none; background: radial-gradient(#ff4d4d, #b30000); color: white; font-weight: bold; cursor: pointer; font-size: 22px; box-shadow: 0 6px #660000; }
+        .play-btn:active { transform: translateY(4px); box-shadow: 0 2px #660000; }
+        .play-btn:disabled { background: #444; box-shadow: none; opacity: 0.7; }
+        .rolling { animation: spin 0.1s infinite linear; }
+        @keyframes spin { 0% { opacity: 0.6; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="balance">৳ <span id="balance">10000</span></div>
+    <div class="slot-container">
+        <div id="r1" class="reel"></div>
+        <div id="r2" class="reel"></div>
+        <div id="r3" class="reel"></div>
+    </div>
+    <button class="play-btn" id="btn" onclick="spin()">PLAY</button>
+
+    <script>
+        const socket = io(); 
+        let balance = parseInt(localStorage.getItem('slot_balance')) || 10000;
+        const reels = [document.getElementById('r1'), document.getElementById('r2'), document.getElementById('r3')];
+        const images = ['apple.png', 'banana.png', 'coin.png', 'dollar.png', 'seven.png', 'begun.png', 'jambura.png', 'rose.png', 'beer-bottle.png', 'water-bottle.png'];
+
+        window.onload = () => {
+            reels.forEach(r => r.innerHTML = `<img src="${images[Math.floor(Math.random()*images.length)]}">`);
+            updateUI();
+        };
+
+        function spin() {
+            if (balance < 10) return alert("ব্যালেন্স নেই!");
+            balance -= 10; updateUI();
+            new Audio('click.mp3').play().catch(()=>{});
+            reels.forEach(r => r.classList.add('rolling'));
+            document.getElementById('btn').disabled = true;
+            socket.emit('request-spin', { bet: 10 });
+        }
+
+        socket.on('receive-spin', (data) => {
+            setTimeout(() => {
+                reels.forEach((r, i) => {
+                    r.classList.remove('rolling');
+                    r.innerHTML = `<img src="${data.grid[i]}" style="width:80%; height:80%; object-fit:contain;">`;
+                });
+                if (data.win) {
+                    balance += data.prize;
+                    new Audio('win.mp3').play().catch(()=>{});
+                    setTimeout(() => alert("অভিনন্দন! আপনি জিতেছেন ৳" + data.prize), 300);
+                }
+                document.getElementById('btn').disabled = false;
+                updateUI();
+            }, 1200);
+        });
+
+        function updateUI() {
+            document.getElementById('balance').innerText = balance;
+            localStorage.setItem('slot_balance', balance);
+        }
+    </script>
+</body>
+</html>
