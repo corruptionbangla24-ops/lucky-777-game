@@ -107,23 +107,33 @@
             socket.emit('request-spin', { bet: currentBet });
         }
 
-        socket.on('receive-spin', (data) => {
+                socket.on('receive-spin', (data) => {
             const delay = isTurbo ? 600 : 1500;
             setTimeout(() => {
-                sndSpin.pause(); sndSpin.currentTime = 0; // স্পিন সাউন্ড বন্ধ
+                sndSpin.pause(); sndSpin.currentTime = 0; 
                 let cellIndex = 0;
                 data.grid.forEach(row => {
                     row.forEach(imgName => {
                         const reel = document.getElementById(`slot-${cellIndex}`);
-                        reel.classList.remove('scrolling');
+                        
+                        // ১. এখানে সব ইফেক্ট ক্লিয়ার হচ্ছে (১১৭-১১৮ লাইনের কাজ)
+                        reel.classList.remove('scrolling', 'win-highlight', 'dim-effect');
                         reel.innerHTML = `<img src="${imgName}">`;
+                        
+                        // ২. উইন হলে হাইলাইট করার নতুন লজিক
+                        if (data.win) {
+                            if (data.grid.flat().filter(i => i === imgName).length >= 3) {
+                                reel.classList.add('win-highlight');
+                            } else {
+                                reel.classList.add('dim-effect');
+                            }
+                        }
                         cellIndex++;
                     });
                 });
                 
                 if (data.win) {
                     balance += data.prize;
-                    // ৩ ও ৪. জিতলে উইন বা বিগ উইন সাউন্ড
                     if(soundOn) {
                         if(data.prize >= currentBet * 10) sndBigWin.play().catch(()=>{});
                         else sndWin.play().catch(()=>{});
@@ -134,6 +144,7 @@
                 updateUI();
             }, delay);
         });
+
 
         function updateUI() {
             document.getElementById('balance').innerText = balance;
