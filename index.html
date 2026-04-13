@@ -22,6 +22,22 @@
         .play-btn:active { transform: translateY(3px); box-shadow: 0 2px #000; }
         .play-btn:disabled { opacity: 0.5; filter: grayscale(1); }
         .btn-icon { background: #444; border: none; color: white; width: 42px; height: 42px; border-radius: 50%; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+                /* বিজয়ী ছবির হাইলাইট ইফেক্ট */
+        .win-highlight {
+            border: 3px solid #f1c40f !important;
+            box-shadow: 0 0 20px #f1c40f !important;
+            transform: scale(1.1);
+            z-index: 10;
+            background: #fff !important;
+            transition: 0.3s;
+        }
+
+        /* না জেতা ছবিগুলো ঝাপসা হবে */
+        .dim-effect {
+            opacity: 0.3;
+            filter: grayscale(0.8);
+        }
+
     </style>
 </head>
 <body>
