@@ -9,12 +9,11 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// প্রাইজ লিস্ট (আপনার চিরকুট ও ব্যবসায়িক লজিক অনুযায়ী)
 const multipliers = {
-    'seven.png': 700,        // মেগা উইন ১
-    'beer-bottle.png': 500,  // মেগা উইন ২
-    'coin.png': 200,         // মেগা উইন ৩
-    'dollar.png': 50,        // বিগ উইন
+    'seven.png': 700,
+    'beer-bottle.png': 500,
+    'coin.png': 200,
+    'dollar.png': 50,
     'rose.png': 10,
     'apple.png': 2,
     'jambura.png': 1.5,
@@ -28,7 +27,6 @@ const images = Object.keys(multipliers);
 io.on('connection', (socket) => {
     socket.on('request-spin', (data) => {
         let grid = [];
-        // ৩ কলাম x ৪ সারির গ্রিড তৈরি
         for (let i = 0; i < 4; i++) {
             grid.push([
                 images[Math.floor(Math.random() * images.length)],
@@ -39,46 +37,40 @@ io.on('connection', (socket) => {
 
         let totalPrize = 0;
         let win = false;
-        let isMegaWin = false;
+        let winningImg = ""; // ঘর হাইলাইট করার জন্য
 
-        // --- মেগা উইন কন্ট্রোল (র্যান্ডমলি ভাগ্যক্রমে আসবে) ---
-        let luckFactor = Math.random() * 2000; // ২০০০ বারের মধ্যে ১ বার মেগা উইন
+        // --- ২৪৩ ওয়েজ উইন চেক ---
+        images.forEach(img => {
+            // প্রতি কলামে ছবিটি কতবার আছে তা গুনে দেখা
+            let col1 = grid.filter(row => row[0] === img).length;
+            let col2 = grid.filter(row => row[1] === img).length;
+            let col3 = grid.filter(row => row[2] === img).length;
 
-        if (luckFactor < 1) { // ৭০০ গুণ
-            win = true; isMegaWin = true;
+            if (col1 > 0 && col2 > 0 && col3 > 0) {
+                win = true;
+                winningImg = img; 
+                let ways = col1 * col2 * col3;
+                totalPrize += (data.bet * multipliers[img] * ways) / 5;
+            }
+        });
+
+        // মেগা উইন এর জন্য বিশেষ লজিক (আপনার চিরকুট অনুযায়ী)
+        let megaLuck = Math.random() * 1000;
+        if (megaLuck < 1) { // ৭০০ গুণ
+            win = true; winningImg = 'seven.png';
             totalPrize = data.bet * 700;
-            grid = [['seven.png', 'seven.png', 'seven.png'], ['seven.png', 'seven.png', 'seven.png'], ['seven.png', 'seven.png', 'seven.png'], ['seven.png', 'seven.png', 'seven.png']];
-        } else if (luckFactor < 3) { // ৫০০ গুণ
-            win = true; isMegaWin = true;
-            totalPrize = data.bet * 500;
-            grid = [['beer-bottle.png', 'beer-bottle.png', 'beer-bottle.png'],['beer-bottle.png', 'beer-bottle.png', 'beer-bottle.png'],['beer-bottle.png', 'beer-bottle.png', 'beer-bottle.png'],['beer-bottle.png', 'beer-bottle.png', 'beer-bottle.png']];
-        } else if (luckFactor < 10) { // ২০০ গুণ
-            win = true; isMegaWin = true;
-            totalPrize = data.bet * 200;
-            grid = [['coin.png', 'coin.png', 'coin.png'],['coin.png', 'coin.png', 'coin.png'],['coin.png', 'coin.png', 'coin.png'],['coin.png', 'coin.png', 'coin.png']];
-        } else {
-            // --- সাধারণ ২৪৩ ওয়েজ উইনিং লজিক ---
-            images.forEach(img => {
-                let col1 = grid.filter(row => row[0] === img).length;
-                let col2 = grid.filter(row => row[1] === img).length;
-                let col3 = grid.filter(row => row[2] === img).length;
-
-                if (col1 > 0 && col2 > 0 && col3 > 0) {
-                    // শুধু ছোট প্রাইজগুলো ২৪৩ ওয়েজে বারবার মিলবে
-                    if (multipliers[img] < 100) {
-                        win = true;
-                        let ways = col1 * col2 * col3;
-                        totalPrize += (data.bet * multipliers[img] * ways) / 5;
-                    }
-                }
-            });
+            grid = [['seven.png','seven.png','seven.png'],['seven.png','seven.png','seven.png'],['seven.png','seven.png','seven.png'],['seven.png','seven.png','seven.png']];
         }
 
-        // আউটপুট পাঠানো
-        socket.emit('receive-spin', { grid, win, prize: Math.floor(totalPrize), isMegaWin });
+        socket.emit('receive-spin', { 
+            grid: grid, 
+            win: win, 
+            prize: Math.floor(totalPrize), 
+            winningImg: winningImg 
+        });
     });
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, '0.0.0.0', () => { console.log(`243 Ways & Mega Win Active`); });
+server.listen(PORT, '0.0.0.0', () => { console.log(`Server is running!`); });
 
