@@ -108,22 +108,24 @@
             socket.emit('request-spin', { bet: currentBet });
         }
 
-                socket.on('receive-spin', (data) => {
+                  socket.on('receive-spin', (data) => {
             const delay = isTurbo ? 600 : 1500;
             setTimeout(() => {
-                sndSpin.pause(); sndSpin.currentTime = 0; 
+                if(soundOn) { sndSpin.pause(); sndSpin.currentTime = 0; }
+                
                 let cellIndex = 0;
                 data.grid.forEach(row => {
                     row.forEach(imgName => {
                         const reel = document.getElementById(`slot-${cellIndex}`);
-                        
-                        // ১. এখানে সব ইফেক্ট ক্লিয়ার হচ্ছে (১১৭-১১৮ লাইনের কাজ)
+                        // সব ইফেক্ট ক্লিয়ার করা
                         reel.classList.remove('scrolling', 'win-highlight', 'dim-effect');
                         reel.innerHTML = `<img src="${imgName}">`;
                         
-                        // ২. উইন হলে হাইলাইট করার নতুন লজিক
+                        // ১. উইনিং হাইলাইট লজিক (২৪৩ ওয়েজে ৩টি বা তার বেশি মিললে)
                         if (data.win) {
-                            if (data.grid.flat().filter(i => i === imgName).length >= 3) {
+                            // চেক করা হচ্ছে এই ছবিটি কি জেতার লাইনে আছে কি না
+                            const count = data.grid.flat().filter(i => i === imgName).length;
+                            if (count >= 3) {
                                 reel.classList.add('win-highlight');
                             } else {
                                 reel.classList.add('dim-effect');
@@ -133,18 +135,29 @@
                     });
                 });
                 
+                // ২. নতুন উইন মেসেজ অ্যানিমেশন (সাদা অ্যালার্ট ছাড়া)
                 if (data.win) {
                     balance += data.prize;
                     if(soundOn) {
                         if(data.prize >= currentBet * 10) sndBigWin.play().catch(()=>{});
                         else sndWin.play().catch(()=>{});
                     }
-                    setTimeout(() => alert("WINNER! ৳" + data.prize), 200);
+
+                    // স্ক্রিনের মাঝখানে গোল্ডেন মেসেজ দেখানো
+                    const overlay = document.getElementById('win-overlay');
+                    const amountSpan = document.getElementById('win-amount');
+                    if(overlay && amountSpan) {
+                        amountSpan.innerText = data.prize;
+                        overlay.style.display = 'block';
+                        setTimeout(() => { overlay.style.display = 'none'; }, 2500);
+                    }
                 }
+                
                 document.getElementById('btn').disabled = false;
                 updateUI();
             }, delay);
         });
+      
 
 
         function updateUI() {
