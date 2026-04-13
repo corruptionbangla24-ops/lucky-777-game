@@ -112,7 +112,7 @@
             socket.emit('request-spin', { bet: currentBet });
         }
 
-                  socket.on('receive-spin', (data) => {
+                socket.on('receive-spin', (data) => {
             const delay = isTurbo ? 600 : 1500;
             setTimeout(() => {
                 if(soundOn) { sndSpin.pause(); sndSpin.currentTime = 0; }
@@ -125,9 +125,8 @@
                         reel.classList.remove('scrolling', 'win-highlight', 'dim-effect');
                         reel.innerHTML = `<img src="${imgName}">`;
                         
-                        // ১. উইনিং হাইলাইট লজিক (২৪৩ ওয়েজে ৩টি বা তার বেশি মিললে)
+                        // ১. উইনিং হাইলাইট লজিক
                         if (data.win) {
-                            // চেক করা হচ্ছে এই ছবিটি কি জেতার লাইনে আছে কি না
                             const count = data.grid.flat().filter(i => i === imgName).length;
                             if (count >= 3) {
                                 reel.classList.add('win-highlight');
@@ -138,8 +137,8 @@
                         cellIndex++;
                     });
                 });
-                
-                // ২. নতুন উইন মেসেজ অ্যানিমেশন (সাদা অ্যালার্ট ছাড়া)
+
+                // ২. নতুন উইন মেসেজ অ্যানিমেশন (অ্যালার্ট ছাড়া)
                 if (data.win) {
                     balance += data.prize;
                     if(soundOn) {
@@ -153,6 +152,7 @@
                     if(overlay && amountSpan) {
                         amountSpan.innerText = data.prize;
                         overlay.style.display = 'block';
+                        // ২.৫ সেকেন্ড পর মেসেজটি চলে যাবে
                         setTimeout(() => { overlay.style.display = 'none'; }, 2500);
                     }
                 }
@@ -161,8 +161,6 @@
                 updateUI();
             }, delay);
         });
-      
-
 
         function updateUI() {
             document.getElementById('balance').innerText = balance;
@@ -171,5 +169,4 @@
     </script>
 </body>
 </html>
-
-
+          
