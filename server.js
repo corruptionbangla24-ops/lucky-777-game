@@ -7,8 +7,10 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
+const PORT = process.env.PORT || 10000;
 app.use(express.static(path.join(__dirname, 'public')));
 
+// আপনার চিরকুট অনুযায়ী প্রাইজ লিস্ট
 const multipliers = {
     'seven.png': 700,
     'beer-bottle.png': 500,
@@ -27,6 +29,7 @@ const images = Object.keys(multipliers);
 io.on('connection', (socket) => {
     socket.on('request-spin', (data) => {
         let grid = [];
+        // ৩ কলাম x ৪ সারির গ্রিড তৈরি
         for (let i = 0; i < 4; i++) {
             grid.push([
                 images[Math.floor(Math.random() * images.length)],
@@ -37,40 +40,45 @@ io.on('connection', (socket) => {
 
         let totalPrize = 0;
         let win = false;
-        let winningImg = ""; // ঘর হাইলাইট করার জন্য
+        let winningImg = "";
 
-        // --- ২৪৩ ওয়েজ উইন চেক ---
-        images.forEach(img => {
-            // প্রতি কলামে ছবিটি কতবার আছে তা গুনে দেখা
-            let col1 = grid.filter(row => row[0] === img).length;
-            let col2 = grid.filter(row => row[1] === img).length;
-            let col3 = grid.filter(row => row[2] === img).length;
+        // ১. মেগা উইন লজিক (ভাগ্যক্রমে বড় উইন - ৭০০x, ৫০০x, ২০০x)
+        let luckFactor = Math.random() * 1500; // ১৫০০ স্পিনে ১ বার বড় জয়ের সুযোগ
 
-            if (col1 > 0 && col2 > 0 && col3 > 0) {
-                win = true;
-                winningImg = img; 
-                let ways = col1 * col2 * col3;
-                totalPrize += (data.bet * multipliers[img] * ways) / 5;
-            }
-        });
-
-        // মেগা উইন এর জন্য বিশেষ লজিক (আপনার চিরকুট অনুযায়ী)
-        let megaLuck = Math.random() * 1000;
-        if (megaLuck < 1) { // ৭০০ গুণ
+        if (luckFactor < 1) { 
             win = true; winningImg = 'seven.png';
             totalPrize = data.bet * 700;
             grid = [['seven.png','seven.png','seven.png'],['seven.png','seven.png','seven.png'],['seven.png','seven.png','seven.png'],['seven.png','seven.png','seven.png']];
+        } else if (luckFactor < 3) {
+            win = true; winningImg = 'beer-bottle.png';
+            totalPrize = data.bet * 500;
+            grid = [['beer-bottle.png','beer-bottle.png','beer-bottle.png'],['beer-bottle.png','beer-bottle.png','beer-bottle.png'],['beer-bottle.png','beer-bottle.png','beer-bottle.png'],['beer-bottle.png','beer-bottle.png','beer-bottle.png']];
+        } else {
+            // ২. সাধারণ ২৪৩ ওয়েজ লজিক (ঘন ঘন ছোট জয়)
+            images.forEach(img => {
+                let col1 = grid.filter(row => row[0] === img).length;
+                let col2 = grid.filter(row => row[1] === img).length;
+                let col3 = grid.filter(row => row[2] === img).length;
+
+                if (col1 > 0 && col2 > 0 && col3 > 0) {
+                    if (multipliers[img] < 100) {
+                        win = true;
+                        winningImg = img;
+                        let ways = col1 * col2 * col3;
+                        totalPrize += (data.bet * multipliers[img] * ways) / 5;
+                    }
+                }
+            });
         }
 
         socket.emit('receive-spin', { 
             grid: grid, 
             win: win, 
-            prize: Math.floor(totalPrize), 
+            prize: Math.floor(totalPrize),
             winningImg: winningImg 
         });
     });
 });
 
-const PORT = process.env.PORT || 10000;
-server.listen(PORT, '0.0.0.0', () => { console.log(`Server is running!`); });
+server.listen(PORT, '0.0.0.0', () => { console.log(`Server is running on port ${PORT}`); });
 
