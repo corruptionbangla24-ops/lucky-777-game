@@ -12,22 +12,31 @@ app.use(express.static('public'));
 // আপনার সিম্বল লিস্ট
 const symbols = ['apple.png', 'banana.png', 'coin.png', 'dollar.png', 'seven.png', 'begun.png', 'jambura.png', 'rose.png', 'beer-bottle.png', 'water-bottle.png'];
 
-// --- আপনার ইনফিনিটি ফ্রি সাইটের তথ্য ---
-const API_URL = 'https://আপনার-সাইটের-লিঙ্://xn--p5b.com'; 
+// --- আপনার ইনফিনিটি ফ্রি সাইটের সঠিক API লিঙ্ক (এটি আপডেট করা হয়েছে) ---
+const API_URL = 'https://gamer.gd';
 const SECRET_KEY = "betlover24_secure_key";
 
 io.on('connection', (socket) => {
+    console.log('একটি ইউজার কানেক্ট হয়েছে');
+
     socket.on('request-spin', async (data) => {
         const { username, bet } = data;
 
+        if (!username) {
+            console.log("Username missing!");
+            return;
+        }
+
         try {
-            // ১. বাজি ধরলে ইনফিনিটি ফ্রি থেকে টাকা কাটা
+            // ১. বাজি ধরলে আপনার সাইট থেকে টাকা কাটা
             const res = await axios.post(API_URL, new URLSearchParams({
-                username: username, amount: -bet, token: SECRET_KEY
+                username: username, 
+                amount: -bet, 
+                token: SECRET_KEY
             }));
 
-            if (res.data.status === 'success') {
-                // ২. ২৪৩ ওয়েজ গ্রিড তৈরি (৩ কলাম x ৪ সারি = ১২টি ঘর)
+            if (res.data && res.data.status === 'success') {
+                // ২. গ্রিড তৈরি (৩ কলাম x ৪ সারি = ১২টি ঘর)
                 let grid = [];
                 for (let i = 0; i < 4; i++) {
                     let row = [];
@@ -46,7 +55,7 @@ io.on('connection', (socket) => {
                     if (count >= 3) {
                         win = true;
                         winningImg = sym;
-                        // আপনার সেই বিশেষ প্রাইজ লজিক
+                        // প্রাইজ লজিক
                         if (sym === 'seven.png') prize = bet * 10;
                         else if (sym === 'dollar.png') prize = bet * 5;
                         else prize = bet * 2;
@@ -54,27 +63,32 @@ io.on('connection', (socket) => {
                     }
                 }
 
-                // ৪. যদি প্লেয়ার জেতে, তবে ইনফিনিটি ফ্রিতে টাকা যোগ করা
+                // ৪. যদি প্লেয়ার জেতে, তবে সাইটে টাকা যোগ করা
                 if (win && prize > 0) {
                     await axios.post(API_URL, new URLSearchParams({
-                        username: username, amount: prize, token: SECRET_KEY
+                        username: username, 
+                        amount: prize, 
+                        token: SECRET_KEY
                     }));
                 }
 
-                // ৫. রেজাল্ট পাঠানো
+                // ৫. রেজাল্ট পাঠানো (নতুন ব্যালেন্সসহ)
                 socket.emit('receive-spin', { 
                     grid, 
                     win, 
                     prize, 
                     winningImg,
-                    newBalance: win ? res.data.new_balance + prize : res.data.new_balance 
+                    newBalance: win ? parseFloat(res.data.new_balance) + prize : res.data.new_balance 
                 });
+            } else {
+                console.log("Balance deduction failed:", res.data ? res.data.message : "No response");
             }
         } catch (e) {
-            console.log("API Connection Error");
+            console.log("API Connection Error - চেক করুন slot_api.php ফাইলটি ঠিক আছে কি না");
         }
     });
 });
 
-server.listen(3000, () => { console.log('Server is running on port 3000'); });
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => { console.log(`Server is running on port ${PORT}`); });
 
