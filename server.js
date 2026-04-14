@@ -1,84 +1,80 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
+const axios = require('axios');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server);
 
-const PORT = process.env.PORT || 10000;
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-// আপনার চিরকুটের সংশোধিত প্রাইজ তালিকা
-const multipliers = {
-    'seven.png': 700,
-    'beer-bottle.png': 500,
-    'coin.png': 200,
-    'dollar.png': 50,
-    'rose.png': 10,
-    'apple.png': 2,
-    'jambura.png': 1.5,
-    'banana.png': 1,
-    'begun.png': 0.5,
-    'water-bottle.png': 0.2
-};
+// আপনার সিম্বল লিস্ট
+const symbols = ['apple.png', 'banana.png', 'coin.png', 'dollar.png', 'seven.png', 'begun.png', 'jambura.png', 'rose.png', 'beer-bottle.png', 'water-bottle.png'];
 
-const images = Object.keys(multipliers);
+// --- আপনার ইনফিনিটি ফ্রি সাইটের তথ্য ---
+const API_URL = 'https://আপনার-সাইটের-লিঙ্://xn--p5b.com'; 
+const SECRET_KEY = "betlover24_secure_key";
 
 io.on('connection', (socket) => {
-    socket.on('request-spin', (data) => {
-        let grid = [];
-        // ৩ কলাম x ৪ সারির গ্রিড তৈরি
-        for (let i = 0; i < 4; i++) {
-            grid.push([
-                images[Math.floor(Math.random() * images.length)],
-                images[Math.floor(Math.random() * images.length)],
-                images[Math.floor(Math.random() * images.length)]
-            ]);
-        }
+    socket.on('request-spin', async (data) => {
+        const { username, bet } = data;
 
-        let totalPrize = 0;
-        let win = false;
-        let winningImg = ""; 
+        try {
+            // ১. বাজি ধরলে ইনফিনিটি ফ্রি থেকে টাকা কাটা
+            const res = await axios.post(API_URL, new URLSearchParams({
+                username: username, amount: -bet, token: SECRET_KEY
+            }));
 
-        // ১. ২৪৩ ওয়েজ উইন চেক (ঘন ঘন ছোট জয়)
-        images.forEach(img => {
-            let col1 = grid.filter(row => row[0] === img).length;
-            let col2 = grid.filter(row => row[1] === img).length;
-            let col3 = grid.filter(row => row[2] === img).length;
-
-            if (col1 > 0 && col2 > 0 && col3 > 0) {
-                if (multipliers[img] < 100) {
-                    win = true;
-                    winningImg = img;
-                    let ways = col1 * col2 * col3;
-                    totalPrize += (data.bet * multipliers[img] * ways) / 5;
+            if (res.data.status === 'success') {
+                // ২. ২৪৩ ওয়েজ গ্রিড তৈরি (৩ কলাম x ৪ সারি = ১২টি ঘর)
+                let grid = [];
+                for (let i = 0; i < 4; i++) {
+                    let row = [];
+                    for (let j = 0; j < 3; j++) row.push(symbols[Math.floor(Math.random() * symbols.length)]);
+                    grid.push(row);
                 }
+
+                // ৩. ২৪৩ উইনিং লজিক (৩টি বা তার বেশি মিললে)
+                let win = false;
+                let prize = 0;
+                let winningImg = null;
+
+                const flatGrid = grid.flat();
+                for (let sym of symbols) {
+                    const count = flatGrid.filter(s => s === sym).length;
+                    if (count >= 3) {
+                        win = true;
+                        winningImg = sym;
+                        // আপনার সেই বিশেষ প্রাইজ লজিক
+                        if (sym === 'seven.png') prize = bet * 10;
+                        else if (sym === 'dollar.png') prize = bet * 5;
+                        else prize = bet * 2;
+                        break;
+                    }
+                }
+
+                // ৪. যদি প্লেয়ার জেতে, তবে ইনফিনিটি ফ্রিতে টাকা যোগ করা
+                if (win && prize > 0) {
+                    await axios.post(API_URL, new URLSearchParams({
+                        username: username, amount: prize, token: SECRET_KEY
+                    }));
+                }
+
+                // ৫. রেজাল্ট পাঠানো
+                socket.emit('receive-spin', { 
+                    grid, 
+                    win, 
+                    prize, 
+                    winningImg,
+                    newBalance: win ? res.data.new_balance + prize : res.data.new_balance 
+                });
             }
-        });
-
-        // ২. মেগা উইন লজিক (ভাগ্যক্রমে বড় উইন - ৭০০x, ৫০০x, ২০০x)
-        let luckFactor = Math.random() * 1500; 
-        if (luckFactor < 1) { 
-            win = true; winningImg = 'seven.png';
-            totalPrize = data.bet * 700;
-            grid = [['seven.png','seven.png','seven.png'],['seven.png','seven.png','seven.png'],['seven.png','seven.png','seven.png'],['seven.png','seven.png','seven.png']];
-        } else if (luckFactor < 3) {
-            win = true; winningImg = 'beer-bottle.png';
-            totalPrize = data.bet * 500;
-            grid = [['beer-bottle.png','beer-bottle.png','beer-bottle.png'],['beer-bottle.png','beer-bottle.png','beer-bottle.png'],['beer-bottle.png','beer-bottle.png','beer-bottle.png'],['beer-bottle.png','beer-bottle.png','beer-bottle.png']];
+        } catch (e) {
+            console.log("API Connection Error");
         }
-
-        // ক্লায়েন্টে winningImg সহ রেজাল্ট পাঠানো
-        socket.emit('receive-spin', { 
-            grid: grid, 
-            win: win, 
-            prize: Math.floor(totalPrize),
-            winningImg: winningImg 
-        });
     });
 });
 
-server.listen(PORT, '0.0.0.0', () => { console.log(`Server is running!`); });
+server.listen(3000, () => { console.log('Server is running on port 3000'); });
 
