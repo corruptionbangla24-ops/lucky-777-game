@@ -1,78 +1,63 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BETLOVER24 - PRO SLOT MASTER</title>
+    <title>BETLOVER24 - LUCKY 777</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        /* ১. মূল ডিজাইন ও ব্যাকগ্রাউন্ড */
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f0f0f; color: white; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; height: 100vh; overflow: hidden; }
+        /* ১. ব্যাকগ্রাউন্ড ও পজিশন ফিক্স */
+        body { font-family: Arial, sans-serif; background: #0f0f0f; color: white; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
         
-        /* ২. হেডার ও ব্যালেন্স সেকশন */
-        .header { width: 100%; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; border-bottom: 2px solid #f1c40f; box-sizing: border-box; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .brand .name { color: #00e6ff; font-weight: 900; font-size: 19px; letter-spacing: 1px; }
-        .brand .game { color: #ff4d4d; font-weight: bold; font-size: 12px; }
-        .balance-box { background: linear-gradient(145deg, #27ae60, #2ecc71); padding: 6px 16px; border-radius: 30px; font-weight: bold; font-size: 17px; border: 1px solid #ffffff33; }
+        .header { width: 100%; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: #111; border-bottom: 2px solid #f1c40f; box-sizing: border-box; }
+        .brand .name { color: #00e6ff; font-weight: bold; font-size: 18px; }
+        .brand .game { color: #ff4d4d; font-size: 11px; font-weight: bold; }
+        .balance-box { background: #27ae60; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 16px; }
 
-        /* ৩. ৩x৪ স্লট মেশিন গ্রিড (বোর্ড উপরে তোলা হয়েছে) */
-        .slot-machine { margin-top: 10px; display: grid; grid-template-columns: repeat(3, 85px); grid-template-rows: repeat(4, 85px); gap: 10px; background: #222; padding: 12px; border: 4px solid #f1c40f; border-radius: 18px; box-shadow: 0 0 30px rgba(241,196,15,0.2); }
-        .reel { width: 85px; height: 85px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 10px; border: 1px solid #444; position: relative; }
-        .reel img { width: 80%; height: 80%; object-fit: contain; position: absolute; }
+        /* ২. স্লট মেশিনের পজিশন (নিচের সারি ঠিক করা হয়েছে) */
+        .slot-machine { margin-top: 10px; background: #222; border: 4px solid #f1c40f; border-radius: 15px; padding: 10px; box-shadow: 0 0 20px rgba(241,196,15,0.2); }
+        .grid { display: grid; grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(4, 80px); gap: 8px; }
+        .reel { width: 80px; height: 80px; background: #fff; display: flex; align-items: center; justify-content: center; border-radius: 8px; overflow: hidden; position: relative; }
+        .reel img { width: 80%; height: 80%; object-fit: contain; }
         
-        /* ৪. এনিমেশন লজিক */
+        /* ৩. এনিমেশন ও হাইলাইট */
         .scrolling img { animation: scrollDown 0.12s infinite linear; }
         .turbo-mode img { animation: scrollDown 0.06s infinite linear; }
-        @keyframes scrollDown { 0% { transform: translateY(-100%); opacity: 0.5; } 100% { transform: translateY(100%); opacity: 1; } }
+        @keyframes scrollDown { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+        .win-highlight { border: 3px solid #f1c40f !important; box-shadow: 0 0 15px #f1c40f; transform: scale(1.05); z-index: 5; background: #fff !important; }
+        .dim-effect { opacity: 0.3; filter: grayscale(1); }
 
-        /* ৫. উইনিং ইফেক্ট (গোল্ডেন হাইলাইট ও ডিম) */
-        .win-highlight { border: 4px solid #f1c40f !important; box-shadow: 0 0 25px #f1c40f !important; transform: scale(1.05); z-index: 10; background: #fff !important; }
-        .dim-effect { opacity: 0.25; filter: grayscale(1); }
-        
-        /* ৬. কাস্টম উইন ওভারলে (সাদা বক্সের বিকল্প) */
-        #win-overlay { display: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); color: #f1c40f; padding: 25px 45px; border-radius: 60px; font-size: 32px; font-weight: 900; border: 4px solid #f1c40f; z-index: 999; text-align: center; box-shadow: 0 0 40px #f1c40f; animation: popIn 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
-        @keyframes popIn { 0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+        /* ৪. কন্ট্রোল প্যানেল */
+        .footer-controls { margin-top: 15px; background: rgba(34,34,34,0.9); padding: 15px; border-radius: 25px; width: 90%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .quick-bets { display: flex; gap: 8px; }
+        .q-btn { background: #333; color: #fff; border: 1px solid #555; padding: 6px 12px; border-radius: 10px; cursor: pointer; }
+        .active-bet { background: #f1c40f !important; color: #000 !important; }
 
-        /* ৭. কন্ট্রোল প্যানেল (নিচে সেট করা) */
-        .footer-controls { position: fixed; bottom: 8px; width: 94%; background: rgba(15,15,15,0.98); padding: 12px; border-radius: 35px; display: flex; flex-direction: column; align-items: center; gap: 12px; border: 1px solid #333; box-shadow: 0 -5px 25px rgba(0,0,0,0.8); }
-        
-        .quick-bets { display: flex; gap: 10px; justify-content: center; width: 100%; }
-        .q-btn { background: #333; color: #bbb; border: 1px solid #444; padding: 7px 16px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; }
-        .q-btn.active-bet { background: #f1c40f; color: #000; border-color: #fff; box-shadow: 0 0 12px #f1c40f; }
+        .play-row { display: flex; align-items: center; gap: 20px; width: 100%; justify-content: space-around; }
+        .spin-btn { width: 75px; height: 75px; border-radius: 50%; background: red; color: white; border: 4px solid #fff; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .icon-btn { background: #444; border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+        .turbo-active { background: #f1c40f !important; color: #000 !important; box-shadow: 0 0 10px #f1c40f; }
 
-        .play-section { display: flex; align-items: center; gap: 15px; width: 100%; justify-content: space-between; padding: 0 10px; box-sizing: border-box; }
-        .bet-selector { display: flex; align-items: center; background: #222; padding: 6px 18px; border-radius: 30px; gap: 12px; border: 1px solid #444; }
-        .bet-btn-nav { color: #fff; border: none; background: none; font-size: 26px; font-weight: bold; cursor: pointer; }
-        
-        .play-btn { width: 82px; height: 82px; border-radius: 50%; background: radial-gradient(#ff4d4d, #b30000); border: 4px solid #fff; color: white; font-weight: 900; font-size: 17px; cursor: pointer; box-shadow: 0 5px #000; display: flex; align-items: center; justify-content: center; }
-        .play-btn:active { transform: translateY(3px); box-shadow: 0 2px #000; }
-        .play-btn:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
-
-        .icon-group { display: flex; gap: 12px; }
-        .icon-btn { background: #333; border: none; color: #fff; width: 44px; height: 44px; border-radius: 50%; font-size: 19px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .icon-btn.active { background: #600; color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
+        #win-overlay { display: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); color: #f1c40f; padding: 20px 40px; border-radius: 50px; font-size: 28px; font-weight: bold; border: 3px solid #f1c40f; z-index: 100; text-align: center; animation: popIn 0.3s ease-out; }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <!-- বিজয়ী মেসেজ ওভারলে -->
     <div id="win-overlay">🎉 WINNER!<br>৳<span id="win-amount">0</span></div>
 
-    <!-- লোগো ও ব্যালেন্স হেডার -->
     <div class="header">
-        <div class="brand">
-            <div class="name">BETLOVER24</div>
-            <div class="game">LUCKY 777</div>
-        </div>
-        <div class="balance-box">৳ <span id="balance">10000</span></div>
+        <div class="brand"><div class="name">BETLOVER24</div><div class="game">LUCKY 777</div></div>
+        <div class="balance-box">৳ <span id="balance">2452088</span></div>
     </div>
 
-    <!-- ৩x৪ স্লট বোর্ড -->
-    <div class="slot-machine" id="machine"></div>
+    <div class="slot-machine">
+        <div class="grid" id="slot-grid">
+            <!-- জাভাস্ক্রিপ্ট ১২টি ঘর তৈরি করবে -->
+        </div>
+    </div>
 
-    <!-- কন্ট্রোল প্যানেল -->
     <div class="footer-controls">
-        <!-- ১০, ২০, ৫০, ১০০ কুইক বাটন -->
         <div class="quick-bets">
             <button class="q-btn" onclick="setBet(10, this)">10</button>
             <button class="q-btn" onclick="setBet(20, this)">20</button>
@@ -80,16 +65,16 @@
             <button class="q-btn active-bet" onclick="setBet(100, this)">100</button>
         </div>
 
-        <div class="play-section">
-            <div class="bet-selector">
-                <button class="bet-btn-nav" onclick="changeBet(-5)">-</button>
-                <span id="current-bet" style="font-size:22px; font-weight:bold; min-width:45px; text-align:center; color:#f1c40f;">100</span>
-                <button class="bet-btn-nav" onclick="changeBet(5)">+</button>
+        <div class="play-row">
+            <div style="background:#111; padding:5px 15px; border-radius:20px; color:#f1c40f; font-weight:bold; font-size:20px;">
+                <button onclick="changeBet(-10)" style="background:none; border:none; color:#fff; font-size:20px;">-</button>
+                <span id="current-bet">100</span>
+                <button onclick="changeBet(10)" style="background:none; border:none; color:#fff; font-size:20px;">+</button>
             </div>
             
-            <button class="play-btn" id="btn" onclick="spin()">SPIN</button>
+            <button class="spin-btn" id="btn" onclick="spin()">SPIN</button>
             
-            <div class="icon-group">
+            <div style="display:flex; gap:10px;">
                 <button class="icon-btn" id="sound-btn" onclick="toggleSound()">🔊</button>
                 <button class="icon-btn" id="turbo-btn" onclick="toggleTurbo()">⚡</button>
             </div>
@@ -98,116 +83,78 @@
 
     <script>
         const socket = io();
-        let balance = parseInt(localStorage.getItem('slot_balance')) || 10000;
+        let balance = 2452088;
         let currentBet = 100;
         let isTurbo = false;
         let soundOn = true;
-        const machine = document.getElementById('machine');
-        
-        // ৪টি সাউন্ড ফাইল লোড করা
-        const sndClick = new Audio('click.mp3');
-        const sndSpin = new Audio('spin.mp3');
-        const sndWin = new Audio('win.mp3');
-        const sndBigWin = new Audio('bigwin.mp3');
 
-        // বোর্ড তৈরি
-        for (let i = 0; i < 12; i++) { machine.innerHTML += `<div id="slot-${i}" class="reel"></div>`; }
-        const images = ['apple.png', 'banana.png', 'coin.png', 'dollar.png', 'seven.png', 'begun.png', 'jambura.png', 'rose.png', 'beer-bottle.png', 'water-bottle.png'];
+        const grid = document.getElementById('slot-grid');
+        for(let i=0; i<12; i++) { grid.innerHTML += `<div id="slot-${i}" class="reel"><img src="seven.png"></div>`; }
 
-        window.onload = () => {
-            for (let i = 0; i < 12; i++) { 
-                document.getElementById(`slot-${i}`).innerHTML = `<img src="${images[Math.floor(Math.random()*images.length)]}">`; 
-            }
-            updateUI();
-        };
+        function updateUI() {
+            document.getElementById('balance').innerText = balance;
+            document.getElementById('current-bet').innerText = currentBet;
+        }
 
-        function setBet(val, btn) {
-            currentBet = val;
+        function setBet(v, btn) {
+            currentBet = v;
             document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active-bet'));
             btn.classList.add('active-bet');
-            if(soundOn) sndClick.play().catch(()=>{});
             updateUI();
         }
 
-        function changeBet(v) {
-            if(currentBet + v >= 5) {
-                currentBet += v;
-                document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active-bet'));
-                updateUI();
-            }
-        }
+        function changeBet(v) { if(currentBet + v > 0) currentBet += v; updateUI(); }
 
         function toggleTurbo() {
             isTurbo = !isTurbo;
-            document.getElementById('turbo-btn').classList.toggle('active');
+            document.getElementById('turbo-btn').classList.toggle('turbo-active');
         }
 
         function toggleSound() {
             soundOn = !soundOn;
-            document.getElementById('sound-btn').innerText = soundOn ? '🔊' : '🔇';
+            document.getElementById('sound-btn').innerText = soundOn ? "🔊" : "🔇";
         }
 
         function spin() {
             if (balance < currentBet) return alert("Balance Low!");
-            balance -= currentBet; updateUI();
-            
-            if(soundOn) {
-                sndClick.play().catch(()=>{});
-                sndSpin.loop = true; sndSpin.play().catch(()=>{});
-            }
-
-            document.getElementById('win-overlay').style.display = 'none';
-            for (let i = 0; i < 12; i++) { 
-                const r = document.getElementById(`slot-${i}`);
-                r.classList.remove('win-highlight', 'dim-effect');
-                r.classList.add(isTurbo ? 'turbo-mode' : 'scrolling'); 
-            }
+            balance -= currentBet;
+            updateUI();
             document.getElementById('btn').disabled = true;
+            for(let i=0; i<12; i++) {
+                document.getElementById(`slot-${i}`).classList.remove('win-highlight', 'dim-effect');
+                document.getElementById(`slot-${i}`).classList.add(isTurbo ? 'turbo-mode' : 'scrolling');
+            }
             socket.emit('request-spin', { bet: currentBet });
         }
 
         socket.on('receive-spin', (data) => {
             const delay = isTurbo ? 600 : 1500;
             setTimeout(() => {
-                if(soundOn) { sndSpin.pause(); sndSpin.currentTime = 0; }
-                
                 let idx = 0;
                 data.grid.forEach(row => {
                     row.forEach(img => {
-                        const r = document.getElementById(`slot-${idx}`);
-                        r.classList.remove('scrolling', 'turbo-mode');
-                        r.innerHTML = `<img src="${img}">`;
-                        
-                        // বিজয়ী ঘর হাইলাইট করা
+                        const reel = document.getElementById(`slot-${idx}`);
+                        reel.classList.remove('scrolling', 'turbo-mode');
+                        reel.innerHTML = `<img src="${img}">`;
                         if (data.win) {
-                            if (img === data.winningImg) r.classList.add('win-highlight');
-                            else r.classList.add('dim-effect');
+                            if (img === data.winningImg) reel.classList.add('win-highlight');
+                            else reel.classList.add('dim-effect');
                         }
                         idx++;
                     });
                 });
-                
+
                 if (data.win) {
                     balance += data.prize;
-                    if(soundOn) {
-                        if(data.prize >= currentBet * 10) sndBigWin.play().catch(()=>{});
-                        else sndWin.play().catch(()=>{});
-                    }
                     document.getElementById('win-amount').innerText = data.prize;
                     document.getElementById('win-overlay').style.display = 'block';
-                    setTimeout(() => { document.getElementById('win-overlay').style.display = 'none'; }, 2600);
+                    setTimeout(() => { document.getElementById('win-overlay').style.display = 'none'; }, 2500);
                 }
                 document.getElementById('btn').disabled = false;
                 updateUI();
             }, delay);
         });
-
-        function updateUI() {
-            document.getElementById('current-bet').innerText = currentBet;
-            document.getElementById('balance').innerText = balance;
-            localStorage.setItem('slot_balance', balance);
-        }
     </script>
 </body>
 </html>
-                              
+
