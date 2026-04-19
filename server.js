@@ -28,12 +28,7 @@ io.on('connection', (socket) => {
         }
 
         try {
-            // ৩. বাজি ধরলে ইনফিনিটি ফ্রি সাইট থেকে টাকা কাটানো
-            const res = await axios.post(API_URL, new URLSearchParams({
-                username: username, 
-                amount: -bet, 
-                token: SECRET_KEY
-            }));
+            
 
             // টাকা সফলভাবে কাটলে স্পিন শুরু হবে
             if (res.data && res.data.status === 'success') {
@@ -66,13 +61,7 @@ io.on('connection', (socket) => {
                     }
                 }
 
-                // ৬. প্লেয়ার জিতলে ডাটাবেসে টাকা যোগ করা
-                if (win && prize > 0) {
-                    const winRes = await axios.post(API_URL, new URLSearchParams({
-                        username: username, 
-                        amount: prize, 
-                        token: SECRET_KEY
-                    }));
+                
                     if(winRes.data.status === 'success') {
                         currentBalance = parseFloat(winRes.data.new_balance);
                     }
