@@ -1,10 +1,25 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BETLOVER24 - PRO SLOT MASTER</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- সকেট লাইব্রেরি সরাসরি CDN থেকে নিন -->
+<script src="https://socket.io"></script>
+
+<script>
+    // আপনার রেন্ডার গেম সার্ভারের লিঙ্কটি এখানে দিন
+    const socket = io("https://lucky-777-game-1.onrender.com/"); 
+    
+    socket.on('connect', () => {
+        console.log("Connected to server!");
+    });
+
+    socket.on('connect_error', (err) => {
+        console.error("Socket Error:", err.message);
+    });
+</script>
+
     <style>
         /* ১. মূল ডিজাইন ও ব্যাকগ্রাউন্ড */
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f0f0f; color: white; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; height: 100vh; overflow: hidden; }
