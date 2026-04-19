@@ -178,8 +178,9 @@
                 r.classList.add(isTurbo ? 'turbo-mode' : 'scrolling'); 
             }
             document.getElementById('btn').disabled = true;
-            socket.emit('request-spin', { bet: currentBet });
-        }
+            // আপনার index.html এর spin() ফাংশনের ভেতর এই লাইনটি খুঁজে দেখুন
+socket.emit('request-spin', { username: 'testuser', bet: currentBet });
+
 
         socket.on('receive-spin', (data) => {
             const delay = isTurbo ? 600 : 1500;
